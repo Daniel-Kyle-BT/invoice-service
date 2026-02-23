@@ -2,6 +2,8 @@ package com.company.dry_cleaners.invoicing.infrastructure.persistence.recibo.ent
 
 import java.math.BigDecimal;
 
+import com.company.dry_cleaners.invoicing.soap.type.DetalleBoletaRequest;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -38,4 +40,16 @@ public class BoletaDetalleEntity {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "boleta_id")
 	private BoletaEntity boleta;
+	
+	public void actualizarDesde(DetalleBoletaRequest dto) {
+
+	    this.idProducto = dto.getIdProducto();
+	    this.nombre = dto.getNombre();
+	    this.cantidad = dto.getCantidad();
+	    this.precio = dto.getPrecio();
+
+	    this.subtotal = precio.multiply(
+	            BigDecimal.valueOf(cantidad)
+	    );
+	}
 }

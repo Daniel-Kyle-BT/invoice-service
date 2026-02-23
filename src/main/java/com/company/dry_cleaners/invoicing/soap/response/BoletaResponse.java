@@ -24,6 +24,7 @@ public class BoletaResponse {
     private String codigo;
     private Long idCliente;
     private LocalDateTime fecha;
+    private String estado;
     private BigDecimal total;
 
     @XmlElement(name = "detalles")
@@ -33,6 +34,7 @@ public class BoletaResponse {
     @Setter
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class DetalleResponse {
+    	private Long idBoleta;
         private Long idProducto;
         private String nombre;
         private Integer cantidad;

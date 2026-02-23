@@ -16,6 +16,7 @@ public class BoletaSoapMapper {
         res.setCodigo(entity.getCodigo());
         res.setIdCliente(entity.getIdCliente());
         res.setFecha(entity.getFecha());
+        res.setEstado(entity.getEstado());
         res.setTotal(entity.getTotal());
 
         res.setDetalles(
@@ -23,6 +24,7 @@ public class BoletaSoapMapper {
                 BoletaResponse.DetalleResponse det =
                         new BoletaResponse.DetalleResponse();
 
+                det.setIdBoleta(d.getId());
                 det.setIdProducto(d.getIdProducto());
                 det.setNombre(d.getNombre());
                 det.setCantidad(d.getCantidad());

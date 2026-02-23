@@ -13,16 +13,17 @@ import lombok.Getter;
 import lombok.Setter;
 
 @XmlRootElement(
-        name = "CrearBoletaRequest",
+        name = "ActualizarBoletaRequest",
         namespace = "http://ms.boleta.soap"
 )
 @XmlAccessorType(XmlAccessType.FIELD)
 @Getter
 @Setter
-public class CrearBoletaRequest {
-	
+public class ActualizarBoletaRequest {
+
+    private Long idBoleta;  
     private Long idCliente;
 
-	@XmlElement(name = "detalles")
+    @XmlElement(name = "detalles")
     private List<DetalleBoletaRequest> detalles;
 }

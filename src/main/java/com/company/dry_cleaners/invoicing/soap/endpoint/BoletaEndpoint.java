@@ -8,13 +8,17 @@ import org.springframework.ws.server.endpoint.annotation.RequestPayload;
 import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
 
 import com.company.dry_cleaners.invoicing.application.mapper.BoletaSoapMapper;
+import com.company.dry_cleaners.invoicing.application.usecase.ActualizarBoletaService;
 import com.company.dry_cleaners.invoicing.application.usecase.CrearBoletaCommand;
 import com.company.dry_cleaners.invoicing.application.usecase.ListarBoletaQueryService;
 import com.company.dry_cleaners.invoicing.application.usecase.ObtenerBoletaQueryService;
 import com.company.dry_cleaners.invoicing.application.usecase.RegistrarBoletaService;
 import com.company.dry_cleaners.invoicing.infrastructure.persistence.recibo.entity.BoletaEntity;
+import com.company.dry_cleaners.invoicing.soap.request.ActualizarBoletaRequest;
+import com.company.dry_cleaners.invoicing.soap.request.CambiarEstadoBoletaRequest;
 import com.company.dry_cleaners.invoicing.soap.request.CrearBoletaRequest;
 import com.company.dry_cleaners.invoicing.soap.request.ObtenerBoletaRequest;
+import com.company.dry_cleaners.invoicing.soap.response.ActualizarBoletaResponse;
 import com.company.dry_cleaners.invoicing.soap.response.BoletaResponse;
 import com.company.dry_cleaners.invoicing.soap.response.BoletaResumenResponse;
 import com.company.dry_cleaners.invoicing.soap.response.CrearBoletaResponse;
@@ -26,96 +30,102 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BoletaEndpoint {
 
-    private static final String NAMESPACE = "http://ms.boleta.soap";
+	private static final String NAMESPACE = "http://ms.boleta.soap";
 
-    private final RegistrarBoletaService service;
-    private final ObtenerBoletaQueryService obtener;
-    private final ListarBoletaQueryService listar;
-    private final BoletaSoapMapper mapper;
-    
-    // ===============================
-    // OBTENER
-    // ===============================
+	private final RegistrarBoletaService registrar;
+	private final ActualizarBoletaService actualizar;
+	private final ObtenerBoletaQueryService obtener;
+	private final ListarBoletaQueryService listar;
+	private final BoletaSoapMapper mapper;
 
-    @PayloadRoot(namespace = NAMESPACE, localPart = "ObtenerBoletaRequest")
-    @ResponsePayload
-    public BoletaResponse obtener(
-            @RequestPayload ObtenerBoletaRequest request) {
+	// ===============================
+	// OBTENER
+	// ===============================
 
-        BoletaEntity entity = obtener.ejecutar(request.getId());
+	@PayloadRoot(namespace = NAMESPACE, localPart = "ObtenerBoletaRequest")
+	@ResponsePayload
+	public BoletaResponse obtener(@RequestPayload ObtenerBoletaRequest request) {
 
-        return mapper.toResponse(entity);
-    }
+		BoletaEntity entity = obtener.ejecutar(request.getId());
 
-    // ===============================
-    // LISTAR
-    // ===============================
+		return mapper.toResponse(entity);
+	}
 
-    @PayloadRoot(namespace = NAMESPACE, localPart = "ListarBoletasRequest")
-    @ResponsePayload
-    public ListarBoletasResponse listar() {
-        List<BoletaEntity> boletas = listar.ejecutar();
+	// ===============================
+	// LISTAR
+	// ===============================
 
-        List<BoletaResumenResponse> response =
-                boletas.stream()
-                       .map(this::mapResumen)
-                       .toList();
+	@PayloadRoot(namespace = NAMESPACE, localPart = "ListarBoletasRequest")
+	@ResponsePayload
+	public ListarBoletasResponse listar() {
+		List<BoletaEntity> boletas = listar.ejecutar();
 
-        ListarBoletasResponse res = new ListarBoletasResponse();
-        res.setBoletas(response);
+		List<BoletaResumenResponse> response = boletas.stream().map(this::mapResumen).toList();
 
-        return res;
-    }
-    
-    
-    
+		ListarBoletasResponse res = new ListarBoletasResponse();
+		res.setBoletas(response);
 
-    @PayloadRoot(namespace = NAMESPACE, localPart = "CrearBoletaRequest")
-    @ResponsePayload
-    public CrearBoletaResponse crear(
-            @RequestPayload CrearBoletaRequest request) {
+		return res;
+	}
 
-        CrearBoletaCommand command = map(request);
+	@PayloadRoot(namespace = NAMESPACE, localPart = "ActualizarBoletaRequest")
+	@ResponsePayload
+	public ActualizarBoletaResponse actualizarBoleta(@RequestPayload ActualizarBoletaRequest request) {
+		actualizar.ejecutar(request);
 
-        BoletaEntity boleta = service.ejecutar(command);
+		ActualizarBoletaResponse response = new ActualizarBoletaResponse();
+		response.setMensaje("Boleta actualizada correctamente");
 
-        return new CrearBoletaResponse(
-                boleta.getId(),
-                boleta.getCodigo()
-        );
-    }
+		return response;
+	}
 
-    private CrearBoletaCommand map(CrearBoletaRequest request) {
+	@PayloadRoot(namespace = NAMESPACE, localPart = "CambiarEstadoBoletaRequest")
+	@ResponsePayload
+	public ActualizarBoletaResponse cambiarEstado(@RequestPayload CambiarEstadoBoletaRequest request) {
 
-        CrearBoletaCommand cmd = new CrearBoletaCommand();
-        cmd.setIdCliente(request.getIdCliente());
+		actualizar.cambiarEstado(request);
 
-        List<CrearBoletaCommand.DetalleCommand> detalles =
-                request.getDetalles().stream().map(d -> {
+		ActualizarBoletaResponse response = new ActualizarBoletaResponse();
 
-                    CrearBoletaCommand.DetalleCommand det =
-                            new CrearBoletaCommand.DetalleCommand();
+		response.setMensaje("Estado actualizado");
 
-                    det.setIdProducto(d.getIdProducto());
-                    det.setNombre(d.getNombre());
-                    det.setCantidad(d.getCantidad());
-                    det.setPrecio(d.getPrecio());
+		return response;
+	}
 
-                    return det;
-                }).toList();
+	@PayloadRoot(namespace = NAMESPACE, localPart = "CrearBoletaRequest")
+	@ResponsePayload
+	public CrearBoletaResponse crear(@RequestPayload CrearBoletaRequest request) {
 
-        cmd.setDetalles(detalles);
+		CrearBoletaCommand command = map(request);
 
-        return cmd;
-    }
-    
-    private BoletaResumenResponse mapResumen(BoletaEntity b) {
-        return new BoletaResumenResponse(
-                b.getId(),
-                b.getCodigo(),
-                b.getIdCliente(),
-                b.getEstado(),
-                b.getTotal()
-        );
-    }
+		BoletaEntity boleta = registrar.ejecutar(command);
+
+		return new CrearBoletaResponse(boleta.getId(), boleta.getCodigo());
+	}
+
+	private CrearBoletaCommand map(CrearBoletaRequest request) {
+
+		CrearBoletaCommand cmd = new CrearBoletaCommand();
+		cmd.setIdCliente(request.getIdCliente());
+
+		List<CrearBoletaCommand.DetalleCommand> detalles = request.getDetalles().stream().map(d -> {
+
+			CrearBoletaCommand.DetalleCommand det = new CrearBoletaCommand.DetalleCommand();
+
+			det.setIdProducto(d.getIdProducto());
+			det.setNombre(d.getNombre());
+			det.setCantidad(d.getCantidad());
+			det.setPrecio(d.getPrecio());
+
+			return det;
+		}).toList();
+
+		cmd.setDetalles(detalles);
+
+		return cmd;
+	}
+
+	private BoletaResumenResponse mapResumen(BoletaEntity b) {
+		return new BoletaResumenResponse(b.getId(), b.getCodigo(), b.getIdCliente(), b.getEstado(), b.getTotal());
+	}
 }
